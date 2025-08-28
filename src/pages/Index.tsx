@@ -8,6 +8,7 @@ import AnalysisResults from '@/components/AnalysisResults';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { BarChart3, Sparkles } from 'lucide-react';
 import { generateAnalysisResults, downloadResults, downloadCode } from '@/utils/analysisEngine';
+import { parseFile } from '@/utils/csvParser';
 import { useToast } from '@/hooks/use-toast';
 
 interface ParsedData {
@@ -40,38 +41,16 @@ const MainContent: React.FC = () => {
   const [analysisResults, setAnalysisResults] = useState<AnalysisResult[] | null>(null);
   const [analysisInstructions, setAnalysisInstructions] = useState<string>('');
 
-  // Mock CSV parser - in real implementation, use a proper CSV/Excel parsing library
-  const parseFile = (file: File): Promise<ParsedData> => {
-    return new Promise((resolve) => {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const text = e.target?.result as string;
-        const lines = text.split('\n').filter(line => line.trim());
-        const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
-        
-        const data = lines.slice(1).map(line => {
-          const values = line.split(',').map(v => v.trim().replace(/"/g, ''));
-          const row: any = {};
-          headers.forEach((header, index) => {
-            const value = values[index] || '';
-            row[header] = isNaN(Number(value)) ? value : Number(value);
-          });
-          return row;
-        });
-
-        resolve({
-          data,
-          columns: headers,
-          fileName: file.name
-        });
-      };
-      reader.readAsText(file);
-    });
-  };
-
   const handleFileUpload = async (file: File) => {
     try {
+      console.log('Starting file parsing for:', file.name);
       const parsed = await parseFile(file);
+      console.log('Parsed data:', { 
+        rows: parsed.data.length, 
+        columns: parsed.columns.length, 
+        sampleData: parsed.data.slice(0, 3) 
+      });
+      
       setParsedData(parsed);
       // Reset previous results when new file is uploaded
       setAnalysisResults(null);
@@ -79,7 +58,7 @@ const MainContent: React.FC = () => {
       
       toast({
         title: "File uploaded successfully",
-        description: `${parsed.data.length} rows loaded from ${file.name}`,
+        description: `${parsed.data.length} rows and ${parsed.columns.length} columns loaded from ${file.name}`,
       });
     } catch (error) {
       console.error('Error parsing file:', error);
