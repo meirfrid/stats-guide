@@ -1,12 +1,14 @@
-
 import React, { useState } from 'react';
 import { LanguageProvider } from '@/contexts/LanguageContext';
 import LanguageToggle from '@/components/LanguageToggle';
 import FileUpload from '@/components/FileUpload';
 import DataPreview from '@/components/DataPreview';
 import AnalysisInstructions from '@/components/AnalysisInstructions';
+import AnalysisResults from '@/components/AnalysisResults';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { BarChart3, Sparkles, Download, Code } from 'lucide-react';
+import { BarChart3, Sparkles } from 'lucide-react';
+import { generateAnalysisResults, downloadResults, downloadCode } from '@/utils/analysisEngine';
+import { useToast } from '@/hooks/use-toast';
 
 interface ParsedData {
   data: any[];
@@ -14,10 +16,29 @@ interface ParsedData {
   fileName: string;
 }
 
+interface AnalysisResult {
+  type: 'descriptive' | 'correlation' | 'ttest' | 'chart';
+  title: string;
+  data?: any;
+  chart?: {
+    type: 'bar' | 'line' | 'scatter';
+    data: any[];
+    xKey: string;
+    yKey: string;
+  };
+  summary?: string;
+  pValue?: number;
+  coefficient?: number;
+  confidence?: [number, number];
+}
+
 const MainContent: React.FC = () => {
   const { t } = useLanguage();
+  const { toast } = useToast();
   const [parsedData, setParsedData] = useState<ParsedData | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [analysisResults, setAnalysisResults] = useState<AnalysisResult[] | null>(null);
+  const [analysisInstructions, setAnalysisInstructions] = useState<string>('');
 
   // Mock CSV parser - in real implementation, use a proper CSV/Excel parsing library
   const parseFile = (file: File): Promise<ParsedData> => {
@@ -52,20 +73,78 @@ const MainContent: React.FC = () => {
     try {
       const parsed = await parseFile(file);
       setParsedData(parsed);
+      // Reset previous results when new file is uploaded
+      setAnalysisResults(null);
+      setAnalysisInstructions('');
+      
+      toast({
+        title: "File uploaded successfully",
+        description: `${parsed.data.length} rows loaded from ${file.name}`,
+      });
     } catch (error) {
       console.error('Error parsing file:', error);
+      toast({
+        title: "Error uploading file",
+        description: "Please check the file format and try again.",
+        variant: "destructive",
+      });
     }
   };
 
   const handleAnalyze = (instructions: string) => {
+    if (!parsedData) {
+      toast({
+        title: "No data available",
+        description: "Please upload a file first.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsAnalyzing(true);
+    setAnalysisInstructions(instructions);
     
     // Simulate analysis time
     setTimeout(() => {
-      setIsAnalyzing(false);
-      // Here would be the actual analysis logic
-      console.log('Analysis instructions:', instructions);
-    }, 3000);
+      try {
+        const results = generateAnalysisResults(parsedData, instructions);
+        setAnalysisResults(results);
+        setIsAnalyzing(false);
+        
+        toast({
+          title: "Analysis completed",
+          description: `Generated ${results.length} analysis results`,
+        });
+      } catch (error) {
+        console.error('Error during analysis:', error);
+        setIsAnalyzing(false);
+        toast({
+          title: "Analysis failed",
+          description: "An error occurred during analysis. Please try again.",
+          variant: "destructive",
+        });
+      }
+    }, 2000);
+  };
+
+  const handleDownloadResults = () => {
+    if (analysisResults && parsedData) {
+      downloadResults(analysisResults, parsedData.fileName);
+      toast({
+        title: "Results downloaded",
+        description: "Analysis results have been saved as CSV file",
+      });
+    }
+  };
+
+  const handleDownloadCode = () => {
+    if (analysisResults && parsedData) {
+      downloadCode(analysisResults, parsedData.fileName, analysisInstructions);
+      toast({
+        title: "Code downloaded",
+        description: "Python analysis script has been generated",
+      });
+    }
   };
 
   return (
@@ -118,7 +197,7 @@ const MainContent: React.FC = () => {
           {/* Right Column - Preview & Results */}
           <div className="space-y-6">
             {/* Data Preview */}
-            {parsedData && (
+            {parsedData && !analysisResults && (
               <section className="animate-slide-up">
                 <DataPreview
                   data={parsedData.data}
@@ -128,12 +207,25 @@ const MainContent: React.FC = () => {
               </section>
             )}
 
-            {/* Analysis Results Placeholder */}
+            {/* Analysis Results */}
+            {analysisResults && parsedData && (
+              <section className="animate-slide-up">
+                <AnalysisResults
+                  results={analysisResults}
+                  instructions={analysisInstructions}
+                  fileName={parsedData.fileName}
+                  onDownloadResults={handleDownloadResults}
+                  onDownloadCode={handleDownloadCode}
+                />
+              </section>
+            )}
+
+            {/* Analysis Loading State */}
             {isAnalyzing && (
               <section className="analysis-card animate-fade-in">
                 <div className="flex items-center gap-3 mb-6">
-                  <Code className="w-6 h-6 text-success" />
-                  <h3 className="text-lg font-semibold">{t('results')}</h3>
+                  <BarChart3 className="w-6 h-6 text-success" />
+                  <h3 className="text-lg font-semibold">{t('analyzing')}</h3>
                 </div>
                 
                 <div className="space-y-4">
@@ -152,22 +244,6 @@ const MainContent: React.FC = () => {
             )}
           </div>
         </div>
-
-        {/* Floating Actions */}
-        {parsedData && !isAnalyzing && (
-          <div className="floating-panel animate-fade-in">
-            <div className="flex gap-2">
-              <button className="flex items-center gap-2 px-3 py-2 bg-success text-success-foreground rounded-lg hover:bg-success-hover transition-colors text-sm font-medium">
-                <Download className="w-4 h-4" />
-                {t('downloadResults')}
-              </button>
-              <button className="flex items-center gap-2 px-3 py-2 bg-secondary text-secondary-foreground rounded-lg hover:bg-secondary-hover transition-colors text-sm font-medium">
-                <Code className="w-4 h-4" />
-                {t('downloadCode')}
-              </button>
-            </div>
-          </div>
-        )}
       </main>
     </div>
   );
