@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { LanguageProvider } from '@/contexts/LanguageContext';
 import LanguageToggle from '@/components/LanguageToggle';
@@ -23,7 +24,7 @@ interface AnalysisResult {
   title: string;
   data?: any;
   chart?: {
-    type: 'bar' | 'line' | 'scatter';
+    type: 'bar' | 'line' | 'scatter' | 'histogram' | 'boxplot';
     data: any[];
     xKey: string;
     yKey: string;
