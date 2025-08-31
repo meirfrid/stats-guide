@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, ScatterChart, Scatter } from 'recharts';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
@@ -11,7 +12,7 @@ interface AnalysisResult {
   title: string;
   data?: any;
   chart?: {
-    type: 'bar' | 'line' | 'scatter';
+    type: 'bar' | 'line' | 'scatter' | 'histogram' | 'boxplot';
     data: any[];
     xKey: string;
     yKey: string;
