@@ -10,6 +10,7 @@ import { BarChart3, Sparkles } from 'lucide-react';
 import { generateAnalysisResults, downloadResults, downloadCode } from '@/utils/analysisEngine';
 import { parseFile } from '@/utils/csvParser';
 import { useToast } from '@/hooks/use-toast';
+import { GeneratedChart } from '@/utils/chartGenerator';
 
 interface ParsedData {
   data: any[];
@@ -39,6 +40,7 @@ const MainContent: React.FC = () => {
   const [parsedData, setParsedData] = useState<ParsedData | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisResults, setAnalysisResults] = useState<AnalysisResult[] | null>(null);
+  const [generatedCharts, setGeneratedCharts] = useState<GeneratedChart[]>([]);
   const [analysisInstructions, setAnalysisInstructions] = useState<string>('');
 
   const handleFileUpload = async (file: File) => {
@@ -86,13 +88,14 @@ const MainContent: React.FC = () => {
     // Simulate analysis time
     setTimeout(() => {
       try {
-        const results = generateAnalysisResults(parsedData, instructions);
+        const { results, charts } = generateAnalysisResults(parsedData, instructions);
         setAnalysisResults(results);
+        setGeneratedCharts(charts);
         setIsAnalyzing(false);
         
         toast({
           title: "Analysis completed",
-          description: `Generated ${results.length} analysis results`,
+          description: `Generated ${results.length} analysis results and ${charts.length} charts`,
         });
       } catch (error) {
         console.error('Error during analysis:', error);
@@ -191,6 +194,7 @@ const MainContent: React.FC = () => {
               <section className="animate-slide-up">
                 <AnalysisResults
                   results={analysisResults}
+                  charts={generatedCharts}
                   instructions={analysisInstructions}
                   fileName={parsedData.fileName}
                   onDownloadResults={handleDownloadResults}

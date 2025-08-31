@@ -1,9 +1,10 @@
-
 import React from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, ScatterChart, Scatter } from 'recharts';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { Code, Download, TrendingUp, Calculator } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
+import ChartDisplay from './ChartDisplay';
+import { GeneratedChart } from '@/utils/chartGenerator';
 
 interface AnalysisResult {
   type: 'descriptive' | 'correlation' | 'ttest' | 'chart';
@@ -23,6 +24,7 @@ interface AnalysisResult {
 
 interface AnalysisResultsProps {
   results: AnalysisResult[];
+  charts?: GeneratedChart[];
   instructions: string;
   fileName: string;
   onDownloadResults: () => void;
@@ -31,6 +33,7 @@ interface AnalysisResultsProps {
 
 const AnalysisResults: React.FC<AnalysisResultsProps> = ({ 
   results, 
+  charts = [],
   instructions, 
   fileName, 
   onDownloadResults, 
@@ -218,9 +221,24 @@ const AnalysisResults: React.FC<AnalysisResultsProps> = ({
         <p className="text-sm text-muted-foreground">{instructions}</p>
       </div>
 
-      {/* Results */}
+      {/* Dynamic Charts */}
+      {charts.length > 0 && (
+        <div className="mb-6">
+          <h4 className="font-semibold mb-4 flex items-center gap-2">
+            <TrendingUp className="w-4 h-4" />
+            גרפים דינמיים
+          </h4>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {charts.map((chart, index) => (
+              <ChartDisplay key={chart.id || index} chart={chart} />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Statistical Results */}
       <div className="space-y-6">
-        {results.map((result, index) => (
+        {results.filter(result => result.type !== 'chart').map((result, index) => (
           <div key={index} className="border border-border/50 rounded-lg p-4">
             <h4 className="font-semibold mb-4">{result.title}</h4>
             

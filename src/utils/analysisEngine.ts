@@ -2,6 +2,7 @@ import { calculateDescriptiveStats } from './statistics/descriptiveStats';
 import { calculatePearsonCorrelation } from './statistics/correlation';
 import { independentTTest } from './statistics/ttest';
 import { parseUserInstructions } from './statistics/instructionParser';
+import { generateChartsFromInstructions, GeneratedChart } from './chartGenerator';
 
 interface ParsedData {
   data: any[];
@@ -14,10 +15,11 @@ interface AnalysisResult {
   title: string;
   data?: any;
   chart?: {
-    type: 'bar' | 'line' | 'scatter';
+    type: 'bar' | 'line' | 'scatter' | 'histogram' | 'boxplot';
     data: any[];
     xKey: string;
     yKey: string;
+    title?: string;
   };
   summary?: string;
   pValue?: number;
@@ -28,7 +30,7 @@ interface AnalysisResult {
 export const generateAnalysisResults = (
   parsedData: ParsedData, 
   instructions: string
-): AnalysisResult[] => {
+): { results: AnalysisResult[]; charts: GeneratedChart[] } => {
   const results: AnalysisResult[] = [];
   
   // Parse user instructions
@@ -46,6 +48,12 @@ export const generateAnalysisResults = (
   );
 
   console.log('Analysis request:', { parsed, numericColumns, categoricalColumns });
+
+  // Generate dynamic charts based on user instructions
+  const generatedCharts = generateChartsFromInstructions(
+    { data: parsedData.data, columns: parsedData.columns },
+    instructions
+  );
 
   // Descriptive statistics
   if (parsed.analyses.includes('descriptive') && numericColumns.length > 0) {
@@ -159,43 +167,22 @@ export const generateAnalysisResults = (
     }
   }
 
-  // Add charts based on instructions
-  if (numericColumns.length > 0 && categoricalColumns.length > 0) {
-    const numCol = numericColumns[0];
-    const catCol = categoricalColumns[0];
-    
-    // Group data by category and calculate means
-    const categories = [...new Set(parsedData.data.map(row => row[catCol]).filter(Boolean))];
-    const groupData = categories.slice(0, 10).map(category => {
-      const categoryData = parsedData.data
-        .filter(row => row[catCol] === category)
-        .map(row => Number(row[numCol]))
-        .filter(val => !isNaN(val));
-      
-      const mean = categoryData.length > 0 ? 
-        categoryData.reduce((sum, val) => sum + val, 0) / categoryData.length : 0;
-        
-      return {
-        [catCol]: category,
-        [numCol]: Number(mean.toFixed(3))
-      };
-    }).filter(item => item[numCol] > 0);
+  // Convert generated charts to AnalysisResult format for backwards compatibility
+  generatedCharts.forEach(chart => {
+    results.push({
+      type: 'chart',
+      title: chart.title,
+      chart: {
+        type: chart.config.type as 'bar' | 'line' | 'scatter' | 'histogram' | 'boxplot',
+        data: chart.data,
+        xKey: chart.config.xAxis,
+        yKey: chart.config.yAxis || 'count',
+        title: chart.title
+      }
+    });
+  });
 
-    if (groupData.length > 1) {
-      results.push({
-        type: 'chart',
-        title: `ממוצע ${numCol} לפי ${catCol}`,
-        chart: {
-          type: 'bar',
-          data: groupData,
-          xKey: catCol,
-          yKey: numCol
-        }
-      });
-    }
-  }
-
-  return results;
+  return { results, charts: generatedCharts };
 };
 
 export const downloadResults = (results: AnalysisResult[], fileName: string) => {
