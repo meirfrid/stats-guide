@@ -175,12 +175,9 @@ const MainContent: React.FC = () => {
                 />
               </section>
             )}
-          </div>
 
-          {/* Right Column - Preview & Results */}
-          <div className="space-y-6">
-            {/* Data Preview */}
-            {parsedData && !analysisResults && (
+            {/* Data Preview - Always show when data is available */}
+            {parsedData && (
               <section className="animate-slide-up">
                 <DataPreview
                   data={parsedData.data}
@@ -189,7 +186,10 @@ const MainContent: React.FC = () => {
                 />
               </section>
             )}
+          </div>
 
+          {/* Right Column - Results */}
+          <div className="space-y-6">
             {/* Analysis Results */}
             {analysisResults && parsedData && (
               <section className="animate-slide-up">
