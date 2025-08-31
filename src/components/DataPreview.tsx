@@ -32,25 +32,25 @@ const DataPreview: React.FC<DataPreviewProps> = ({ data, columns, fileName }) =>
     <div className="analysis-card">
       <div className="flex items-center gap-3 mb-6">
         <FileText className="w-6 h-6 text-primary" />
-        <div>
+        <div className="min-w-0 flex-1">
           <h3 className="text-lg font-semibold">{t('dataPreview')}</h3>
-          <p className="text-sm text-muted-foreground">{fileName}</p>
+          <p className="text-sm text-muted-foreground truncate">{fileName}</p>
         </div>
       </div>
 
       {/* Data Stats */}
-      <div className="grid grid-cols-3 gap-4 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
         <div className="bg-primary-soft rounded-lg p-4 text-center">
-          <div className="text-2xl font-bold text-primary">{data.length}</div>
+          <div className="text-xl sm:text-2xl font-bold text-primary">{data.length.toLocaleString()}</div>
           <div className="text-sm text-primary">{t('rows')}</div>
         </div>
         <div className="bg-secondary-soft rounded-lg p-4 text-center">
-          <div className="text-2xl font-bold text-secondary">{columns.length}</div>
+          <div className="text-xl sm:text-2xl font-bold text-secondary">{columns.length}</div>
           <div className="text-sm text-secondary">{t('columns')}</div>
         </div>
         <div className="bg-warning-soft rounded-lg p-4 text-center">
-          <div className="text-2xl font-bold text-warning">
-            {columns.reduce((sum, col) => sum + getMissingCount(col), 0)}
+          <div className="text-xl sm:text-2xl font-bold text-warning">
+            {columns.reduce((sum, col) => sum + getMissingCount(col), 0).toLocaleString()}
           </div>
           <div className="text-sm text-warning">{t('missingValues')}</div>
         </div>
@@ -60,7 +60,7 @@ const DataPreview: React.FC<DataPreviewProps> = ({ data, columns, fileName }) =>
       <div className="mb-6">
         <h4 className="font-semibold mb-3 flex items-center gap-2">
           <BarChart3 className="w-4 h-4" />
-          Column Information
+          פרטי העמודות
         </h4>
         <div className="grid gap-2 max-h-32 overflow-y-auto custom-scrollbar">
           {columns.map((column, index) => {
@@ -69,19 +69,21 @@ const DataPreview: React.FC<DataPreviewProps> = ({ data, columns, fileName }) =>
             
             return (
               <div key={index} className="flex items-center justify-between p-2 bg-surface-variant rounded-lg">
-                <div className="flex items-center gap-3">
-                  <span className={`w-2 h-2 rounded-full ${
+                <div className="flex items-center gap-3 min-w-0 flex-1">
+                  <span className={`w-2 h-2 rounded-full flex-shrink-0 ${
                     type === 'numeric' ? 'bg-success' :
                     type === 'text' ? 'bg-primary' : 'bg-warning'
                   }`} />
-                  <span className="font-medium text-sm">{column}</span>
+                  <span className="font-medium text-sm truncate" title={column}>{column}</span>
                 </div>
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <span className="capitalize">{type}</span>
+                <div className="flex items-center gap-2 text-xs text-muted-foreground flex-shrink-0">
+                  <span className="capitalize hidden sm:inline">
+                    {type === 'numeric' ? 'מספרי' : type === 'text' ? 'טקסט' : 'מעורב'}
+                  </span>
                   {missing > 0 && (
                     <div className="flex items-center gap-1 text-warning">
                       <AlertTriangle className="w-3 h-3" />
-                      <span>{missing} missing</span>
+                      <span>{missing}</span>
                     </div>
                   )}
                 </div>
@@ -97,7 +99,9 @@ const DataPreview: React.FC<DataPreviewProps> = ({ data, columns, fileName }) =>
           <thead>
             <tr>
               {columns.map((column, index) => (
-                <th key={index} className="min-w-32">{column}</th>
+                <th key={index} className="min-w-20 sm:min-w-32 text-xs sm:text-sm" title={column}>
+                  <div className="truncate">{column}</div>
+                </th>
               ))}
             </tr>
           </thead>
@@ -105,9 +109,11 @@ const DataPreview: React.FC<DataPreviewProps> = ({ data, columns, fileName }) =>
             {displayData.map((row, rowIndex) => (
               <tr key={rowIndex}>
                 {columns.map((column, colIndex) => (
-                  <td key={colIndex} className="text-sm">
+                  <td key={colIndex} className="text-xs sm:text-sm">
                     {row[column] !== null && row[column] !== undefined ? 
-                      String(row[column]) : 
+                      <div className="truncate max-w-20 sm:max-w-32" title={String(row[column])}>
+                        {String(row[column])}
+                      </div> : 
                       <span className="text-muted-foreground italic">null</span>
                     }
                   </td>
@@ -119,8 +125,8 @@ const DataPreview: React.FC<DataPreviewProps> = ({ data, columns, fileName }) =>
       </div>
 
       {data.length > 100 && (
-        <div className="mt-3 text-sm text-muted-foreground text-center">
-          Showing first 100 rows of {data.length} total rows
+        <div className="mt-3 text-xs sm:text-sm text-muted-foreground text-center">
+          מוצגות {(100).toLocaleString()} שורות ראשונות מתוך {data.length.toLocaleString()} שורות סה"כ
         </div>
       )}
     </div>
