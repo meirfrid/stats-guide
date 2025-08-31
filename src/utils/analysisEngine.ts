@@ -1,3 +1,7 @@
+import { calculateDescriptiveStats } from './statistics/descriptiveStats';
+import { calculatePearsonCorrelation } from './statistics/correlation';
+import { independentTTest } from './statistics/ttest';
+import { parseUserInstructions } from './statistics/instructionParser';
 
 interface ParsedData {
   data: any[];
@@ -26,64 +30,89 @@ export const generateAnalysisResults = (
   instructions: string
 ): AnalysisResult[] => {
   const results: AnalysisResult[] = [];
-  const numericColumns = parsedData.columns.filter(col => 
-    parsedData.data.some(row => typeof row[col] === 'number')
+  
+  // Parse user instructions
+  const parsed = parseUserInstructions(instructions, parsedData.columns);
+  
+  // Identify numeric and categorical columns
+  const numericColumns = parsedData.columns.filter(col => {
+    const values = parsedData.data.map(row => row[col]).filter(val => val !== null && val !== undefined);
+    return values.length > 0 && values.some(val => typeof val === 'number' || !isNaN(Number(val)));
+  });
+  
+  const categoricalColumns = parsedData.columns.filter(col => 
+    !numericColumns.includes(col) && 
+    parsedData.data.some(row => row[col] !== null && row[col] !== undefined)
   );
 
-  // Always include descriptive statistics for the first numeric column
-  if (numericColumns.length > 0) {
-    const column = numericColumns[0];
-    const values = parsedData.data.map(row => row[column]).filter(val => typeof val === 'number');
-    
-    if (values.length > 0) {
-      const mean = values.reduce((sum, val) => sum + val, 0) / values.length;
-      const variance = values.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / (values.length - 1);
-      const std = Math.sqrt(variance);
-      const sortedValues = [...values].sort((a, b) => a - b);
+  console.log('Analysis request:', { parsed, numericColumns, categoricalColumns });
+
+  // Descriptive statistics
+  if (parsed.analyses.includes('descriptive') && numericColumns.length > 0) {
+    const targetCols = parsed.targetColumns.length > 0 ? 
+      parsed.targetColumns.filter(col => numericColumns.includes(col)) : 
+      numericColumns.slice(0, 3); // Limit for performance
+
+    targetCols.forEach(column => {
+      const values = parsedData.data.map(row => {
+        const val = row[column];
+        return typeof val === 'number' ? val : Number(val);
+      }).filter(val => !isNaN(val));
       
-      results.push({
-        type: 'descriptive',
-        title: `Descriptive Statistics - ${column}`,
-        data: {
-          'Count': values.length,
-          'Mean': mean,
-          'Std Dev': std,
-          'Min': Math.min(...values),
-          'Q1': sortedValues[Math.floor(values.length * 0.25)],
-          'Median': sortedValues[Math.floor(values.length * 0.5)],
-          'Q3': sortedValues[Math.floor(values.length * 0.75)],
-          'Max': Math.max(...values)
-        }
-      });
-    }
+      if (values.length > 0) {
+        const stats = calculateDescriptiveStats(values);
+        
+        results.push({
+          type: 'descriptive',
+          title: `סטטיסטיקה תיאורית - ${column}`,
+          data: {
+            'מספר תצפיות': stats.count,
+            'ממוצע': Number(stats.mean.toFixed(3)),
+            'סטיית תקן': Number(stats.std.toFixed(3)),
+            'מינימום': Number(stats.min.toFixed(3)),
+            'רבעון ראשון': Number(stats.q1.toFixed(3)),
+            'חציון': Number(stats.median.toFixed(3)),
+            'רבעון שלישי': Number(stats.q3.toFixed(3)),
+            'מקסימום': Number(stats.max.toFixed(3)),
+            'חסרים': stats.missing
+          }
+        });
+      }
+    });
   }
 
-  // Add correlation analysis if we have at least 2 numeric columns
-  if (numericColumns.length >= 2) {
+  // Correlation analysis
+  if (parsed.analyses.includes('correlation') && numericColumns.length >= 2) {
     const col1 = numericColumns[0];
     const col2 = numericColumns[1];
     
+    const x = parsedData.data.map(row => {
+      const val = row[col1];
+      return typeof val === 'number' ? val : Number(val);
+    });
+    
+    const y = parsedData.data.map(row => {
+      const val = row[col2];
+      return typeof val === 'number' ? val : Number(val);
+    });
+    
+    const corResult = calculatePearsonCorrelation(x, y);
+    
     // Generate scatter plot data
     const scatterData = parsedData.data
-      .filter(row => typeof row[col1] === 'number' && typeof row[col2] === 'number')
-      .slice(0, 100) // Limit for performance
-      .map(row => ({
-        [col1]: row[col1],
-        [col2]: row[col2]
-      }));
-
-    // Calculate correlation (simplified)
-    const correlation = Math.random() * 0.8 + 0.1; // Mock correlation
-    const pValue = Math.random() * 0.05; // Mock p-value
+      .map(row => ({ [col1]: row[col1], [col2]: row[col2] }))
+      .filter(row => 
+        !isNaN(Number(row[col1])) && !isNaN(Number(row[col2])) &&
+        row[col1] !== null && row[col2] !== null
+      )
+      .slice(0, 200); // Limit for performance
 
     results.push({
       type: 'correlation',
-      title: `Correlation Analysis: ${col1} vs ${col2}`,
-      coefficient: correlation,
-      pValue: pValue,
-      summary: pValue < 0.05 ? 
-        `Significant correlation found (p < 0.05)` : 
-        `No significant correlation found (p >= 0.05)`,
+      title: `ניתוח מתאמים: ${col1} מול ${col2}`,
+      coefficient: Number(corResult.coefficient.toFixed(3)),
+      pValue: Number(corResult.pValue.toFixed(6)),
+      summary: `${corResult.significant ? 'נמצא מתאם מובהק' : 'לא נמצא מתאם מובהק'} (n=${corResult.n}, p=${corResult.pValue < 0.001 ? '<0.001' : corResult.pValue.toFixed(3)})`,
       chart: {
         type: 'scatter',
         data: scatterData,
@@ -93,40 +122,72 @@ export const generateAnalysisResults = (
     });
   }
 
-  // Add a bar chart for categorical data if available
-  const categoricalColumns = parsedData.columns.filter(col => 
-    parsedData.data.some(row => typeof row[col] === 'string')
-  );
-
-  if (categoricalColumns.length > 0 && numericColumns.length > 0) {
-    const catCol = categoricalColumns[0];
+  // T-test analysis
+  if (parsed.analyses.includes('ttest') && numericColumns.length > 0 && categoricalColumns.length > 0) {
     const numCol = numericColumns[0];
+    const catCol = categoricalColumns[0];
+    
+    // Get unique categories
+    const categories = [...new Set(parsedData.data.map(row => row[catCol]).filter(Boolean))];
+    
+    if (categories.length >= 2) {
+      const group1Data = parsedData.data
+        .filter(row => row[catCol] === categories[0])
+        .map(row => Number(row[numCol]))
+        .filter(val => !isNaN(val));
+        
+      const group2Data = parsedData.data
+        .filter(row => row[catCol] === categories[1])
+        .map(row => Number(row[numCol]))
+        .filter(val => !isNaN(val));
+      
+      if (group1Data.length >= 2 && group2Data.length >= 2) {
+        const tResult = independentTTest(group1Data, group2Data);
+        
+        results.push({
+          type: 'ttest',
+          title: `מבחן t בלתי-תלוי: ${numCol} לפי ${catCol}`,
+          coefficient: Number(tResult.statistic.toFixed(3)),
+          pValue: Number(tResult.pValue.toFixed(6)),
+          confidence: [
+            Number(tResult.confidence95[0].toFixed(3)),
+            Number(tResult.confidence95[1].toFixed(3))
+          ],
+          summary: `${tResult.significant ? 'נמצא הבדל מובהק' : 'לא נמצא הבדל מובהק'} בין הקבוצות (t=${tResult.statistic.toFixed(3)}, df=${tResult.df.toFixed(1)}, p=${tResult.pValue < 0.001 ? '<0.001' : tResult.pValue.toFixed(3)}, Cohen's d=${tResult.cohensD.toFixed(3)})`
+        });
+      }
+    }
+  }
+
+  // Add charts based on instructions
+  if (numericColumns.length > 0 && categoricalColumns.length > 0) {
+    const numCol = numericColumns[0];
+    const catCol = categoricalColumns[0];
     
     // Group data by category and calculate means
-    const groupData: { [key: string]: number[] } = {};
-    parsedData.data.forEach(row => {
-      if (row[catCol] && typeof row[numCol] === 'number') {
-        if (!groupData[row[catCol]]) {
-          groupData[row[catCol]] = [];
-        }
-        groupData[row[catCol]].push(row[numCol]);
-      }
-    });
-
-    const barData = Object.entries(groupData)
-      .slice(0, 10) // Limit categories
-      .map(([category, values]) => ({
+    const categories = [...new Set(parsedData.data.map(row => row[catCol]).filter(Boolean))];
+    const groupData = categories.slice(0, 10).map(category => {
+      const categoryData = parsedData.data
+        .filter(row => row[catCol] === category)
+        .map(row => Number(row[numCol]))
+        .filter(val => !isNaN(val));
+      
+      const mean = categoryData.length > 0 ? 
+        categoryData.reduce((sum, val) => sum + val, 0) / categoryData.length : 0;
+        
+      return {
         [catCol]: category,
-        [numCol]: values.reduce((sum, val) => sum + val, 0) / values.length
-      }));
+        [numCol]: Number(mean.toFixed(3))
+      };
+    }).filter(item => item[numCol] > 0);
 
-    if (barData.length > 1) {
+    if (groupData.length > 1) {
       results.push({
         type: 'chart',
-        title: `Average ${numCol} by ${catCol}`,
+        title: `ממוצע ${numCol} לפי ${catCol}`,
         chart: {
           type: 'bar',
-          data: barData,
+          data: groupData,
           xKey: catCol,
           yKey: numCol
         }
