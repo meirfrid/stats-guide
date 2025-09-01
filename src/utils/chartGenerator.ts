@@ -1,4 +1,3 @@
-
 interface ChartData {
   data: any[];
   columns: string[];
@@ -29,6 +28,32 @@ export const generateChartsFromInstructions = (
   const charts: GeneratedChart[] = [];
   const lowerInstructions = instructions.toLowerCase();
   
+  console.log('=== CHART GENERATOR START ===');
+  console.log('Instructions:', instructions);
+  console.log('Available columns:', chartData.columns);
+  
+  // Extract mentioned column names with high precision
+  const findMentionedColumns = (text: string): string[] => {
+    const mentioned: string[] = [];
+    
+    chartData.columns.forEach(col => {
+      const colLower = col.toLowerCase();
+      const textLower = text.toLowerCase();
+      
+      // Check for direct mentions, quoted mentions, etc.
+      if (textLower.includes(colLower) || textLower.includes(col) ||
+          textLower.includes(`"${col}"`) || textLower.includes(`'${col}'`) ||
+          textLower.includes(`"${colLower}"`) || textLower.includes(`'${colLower}'`)) {
+        mentioned.push(col);
+      }
+    });
+    
+    return mentioned;
+  };
+  
+  const mentionedColumns = findMentionedColumns(instructions);
+  console.log('Mentioned columns in chart instructions:', mentionedColumns);
+  
   // Identify numeric and categorical columns
   const numericColumns = chartData.columns.filter(col => {
     const values = chartData.data.map(row => row[col]).filter(val => val !== null && val !== undefined);
@@ -40,26 +65,43 @@ export const generateChartsFromInstructions = (
     chartData.data.some(row => row[col] !== null && row[col] !== undefined)
   );
 
-  // Parse chart requirements from instructions
-  const chartRequests = parseChartRequests(instructions, numericColumns, categoricalColumns);
+  console.log('Numeric columns:', numericColumns);
+  console.log('Categorical columns:', categoricalColumns);
+
+  // Parse chart requirements from instructions with precision
+  const chartRequests = parseChartRequests(instructions, numericColumns, categoricalColumns, mentionedColumns);
+  
+  console.log('Parsed chart requests:', chartRequests);
   
   chartRequests.forEach((request, index) => {
+    console.log(`Processing chart request ${index + 1}:`, request);
+    
     const chartData_processed = processDataForChart(chartData.data, request);
     if (chartData_processed && chartData_processed.length > 0) {
-      charts.push({
+      const chart = {
         id: `chart_${index + 1}`,
         config: request,
         data: chartData_processed,
         title: request.title,
         downloadName: `${request.type}_chart_${index + 1}`
-      });
+      };
+      
+      charts.push(chart);
+      console.log(`Created chart:`, { id: chart.id, type: request.type, dataPoints: chartData_processed.length });
+    } else {
+      console.log(`No data generated for chart request:`, request);
     }
   });
 
-  // Add default charts if none specified
-  if (charts.length === 0) {
-    charts.push(...generateDefaultCharts(chartData, numericColumns, categoricalColumns));
+  // Add default charts only if no specific mentions and no requests generated
+  if (charts.length === 0 && mentionedColumns.length === 0) {
+    console.log('No specific requests found, generating default charts');
+    const defaultCharts = generateDefaultCharts(chartData, numericColumns, categoricalColumns);
+    charts.push(...defaultCharts);
   }
+
+  console.log('=== CHART GENERATOR COMPLETE ===');
+  console.log(`Generated ${charts.length} charts`);
 
   return charts;
 };
@@ -67,25 +109,58 @@ export const generateChartsFromInstructions = (
 const parseChartRequests = (
   instructions: string, 
   numericCols: string[], 
-  categoricalCols: string[]
+  categoricalCols: string[],
+  mentionedCols: string[]
 ): ChartConfig[] => {
   const requests: ChartConfig[] = [];
   const lowerInstructions = instructions.toLowerCase();
 
-  // Look for specific chart types mentioned
+  console.log('Parsing chart requests with mentioned columns:', mentionedCols);
+
+  // Filter mentioned columns by type
+  const mentionedNumeric = mentionedCols.filter(col => numericCols.includes(col));
+  const mentionedCategorical = mentionedCols.filter(col => categoricalCols.includes(col));
+
+  console.log('Mentioned numeric columns:', mentionedNumeric);
+  console.log('Mentioned categorical columns:', mentionedCategorical);
+
+  // Histogram requests
   if (lowerInstructions.includes('היסטוגרמה') || lowerInstructions.includes('histogram')) {
-    numericCols.slice(0, 2).forEach(col => {
+    if (mentionedNumeric.length > 0) {
+      // Create histogram for each mentioned numeric column
+      mentionedNumeric.forEach(col => {
+        requests.push({
+          type: 'histogram',
+          title: `התפלגות ${col}`,
+          xAxis: col,
+          bins: 20
+        });
+        console.log(`Added histogram request for column: ${col}`);
+      });
+    } else if (numericCols.length > 0) {
+      // Fallback to first numeric column
       requests.push({
         type: 'histogram',
-        title: `התפלגות ${col}`,
-        xAxis: col,
+        title: `התפלגות ${numericCols[0]}`,
+        xAxis: numericCols[0],
         bins: 20
       });
-    });
+    }
   }
 
+  // Scatter plot requests
   if (lowerInstructions.includes('פיזור') || lowerInstructions.includes('scatter')) {
-    if (numericCols.length >= 2) {
+    if (mentionedNumeric.length >= 2) {
+      // Use the first two mentioned numeric columns
+      requests.push({
+        type: 'scatter',
+        title: `גרף פיזור: ${mentionedNumeric[0]} מול ${mentionedNumeric[1]}`,
+        xAxis: mentionedNumeric[0],
+        yAxis: mentionedNumeric[1]
+      });
+      console.log(`Added scatter plot: ${mentionedNumeric[0]} vs ${mentionedNumeric[1]}`);
+    } else if (numericCols.length >= 2) {
+      // Fallback
       requests.push({
         type: 'scatter',
         title: `גרף פיזור: ${numericCols[0]} מול ${numericCols[1]}`,
@@ -95,8 +170,20 @@ const parseChartRequests = (
     }
   }
 
+  // Bar chart requests
   if (lowerInstructions.includes('עמודות') || lowerInstructions.includes('bar')) {
-    if (categoricalCols.length > 0 && numericCols.length > 0) {
+    if (mentionedCategorical.length > 0 && mentionedNumeric.length > 0) {
+      // Use mentioned columns
+      requests.push({
+        type: 'bar',
+        title: `ממוצע ${mentionedNumeric[0]} לפי ${mentionedCategorical[0]}`,
+        xAxis: mentionedCategorical[0],
+        yAxis: mentionedNumeric[0],
+        aggregation: 'mean'
+      });
+      console.log(`Added bar chart: ${mentionedNumeric[0]} by ${mentionedCategorical[0]}`);
+    } else if (categoricalCols.length > 0 && numericCols.length > 0) {
+      // Fallback
       requests.push({
         type: 'bar',
         title: `ממוצע ${numericCols[0]} לפי ${categoricalCols[0]}`,
@@ -107,8 +194,17 @@ const parseChartRequests = (
     }
   }
 
+  // Line chart requests
   if (lowerInstructions.includes('קו') || lowerInstructions.includes('line')) {
-    if (numericCols.length >= 2) {
+    if (mentionedNumeric.length >= 2) {
+      requests.push({
+        type: 'line',
+        title: `מגמה: ${mentionedNumeric[1]} לאורך ${mentionedNumeric[0]}`,
+        xAxis: mentionedNumeric[0],
+        yAxis: mentionedNumeric[1]
+      });
+      console.log(`Added line chart: ${mentionedNumeric[1]} along ${mentionedNumeric[0]}`);
+    } else if (numericCols.length >= 2) {
       requests.push({
         type: 'line',
         title: `מגמה: ${numericCols[1]} לאורך ${numericCols[0]}`,
@@ -118,8 +214,17 @@ const parseChartRequests = (
     }
   }
 
+  // Boxplot requests
   if (lowerInstructions.includes('boxplot') || lowerInstructions.includes('תיבה')) {
-    if (categoricalCols.length > 0 && numericCols.length > 0) {
+    if (mentionedCategorical.length > 0 && mentionedNumeric.length > 0) {
+      requests.push({
+        type: 'boxplot',
+        title: `Boxplot: ${mentionedNumeric[0]} לפי ${mentionedCategorical[0]}`,
+        xAxis: mentionedCategorical[0],
+        yAxis: mentionedNumeric[0]
+      });
+      console.log(`Added boxplot: ${mentionedNumeric[0]} by ${mentionedCategorical[0]}`);
+    } else if (categoricalCols.length > 0 && numericCols.length > 0) {
       requests.push({
         type: 'boxplot',
         title: `Boxplot: ${numericCols[0]} לפי ${categoricalCols[0]}`,
@@ -129,6 +234,7 @@ const parseChartRequests = (
     }
   }
 
+  console.log(`Generated ${requests.length} chart requests`);
   return requests;
 };
 
