@@ -32,7 +32,7 @@ export const downloadChart = async (
         // Ensure all text and elements are visible in the clone
         const clonedElement = clonedDoc.querySelector('[data-chart]') || 
                              clonedDoc.querySelector('.recharts-wrapper') ||
-                             clonedElement;
+                             clonedDoc.body.firstElementChild;
         if (clonedElement) {
           (clonedElement as HTMLElement).style.width = `${width}px`;
           (clonedElement as HTMLElement).style.height = `${height}px`;
