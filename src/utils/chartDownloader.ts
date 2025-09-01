@@ -15,18 +15,29 @@ export const downloadChart = async (
   options: ChartDownloadOptions = { format: 'png' }
 ): Promise<void> => {
   try {
-    const { format, quality = 0.9, width, height, backgroundColor = '#ffffff' } = options;
+    const { format, quality = 0.9, width = 1200, height = 800, backgroundColor = '#ffffff' } = options;
     
-    // Configure html2canvas options
+    // Configure html2canvas options for better quality
     const canvasOptions = {
       backgroundColor,
-      scale: 2, // Higher resolution
+      scale: 3, // Higher resolution for better quality
       useCORS: true,
       allowTaint: false,
       width: width,
       height: height,
       scrollX: 0,
-      scrollY: 0
+      scrollY: 0,
+      logging: false,
+      onclone: (clonedDoc: Document) => {
+        // Ensure all text and elements are visible in the clone
+        const clonedElement = clonedDoc.querySelector('[data-chart]') || 
+                             clonedDoc.querySelector('.recharts-wrapper') ||
+                             clonedElement;
+        if (clonedElement) {
+          (clonedElement as HTMLElement).style.width = `${width}px`;
+          (clonedElement as HTMLElement).style.height = `${height}px`;
+        }
+      }
     };
 
     const canvas = await html2canvas(chartElement, canvasOptions);

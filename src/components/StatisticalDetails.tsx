@@ -1,6 +1,6 @@
-
 import React from 'react';
 import { Calculator, FileText, TrendingUp } from 'lucide-react';
+import DetailedCalculations from './DetailedCalculations';
 
 interface StatisticalDetailsProps {
   type: 'descriptive' | 'correlation' | 'ttest';
@@ -77,6 +77,14 @@ const StatisticalDetails: React.FC<StatisticalDetailsProps> = ({
             <p>✓ כל הערכים עברו בדיקת תקינות</p>
           </div>
         </div>
+
+        <DetailedCalculations 
+          type="descriptive" 
+          data={data} 
+          rawData={rawData}
+          variables={variables}
+          sampleSize={sampleSize}
+        />
       </div>
     );
   };
@@ -223,8 +231,28 @@ const StatisticalDetails: React.FC<StatisticalDetailsProps> = ({
       </div>
       
       {type === 'descriptive' && renderDescriptiveDetails()}
-      {type === 'correlation' && renderCorrelationDetails()}
-      {type === 'ttest' && renderTTestDetails()}
+      {type === 'correlation' && (
+        <div>
+          <DetailedCalculations 
+            type="correlation" 
+            data={data} 
+            rawData={rawData}
+            variables={variables}
+            sampleSize={sampleSize}
+          />
+        </div>
+      )}
+      {type === 'ttest' && (
+        <div>
+          <DetailedCalculations 
+            type="ttest" 
+            data={data} 
+            rawData={rawData}
+            variables={variables}
+            sampleSize={sampleSize}
+          />
+        </div>
+      )}
     </div>
   );
 };

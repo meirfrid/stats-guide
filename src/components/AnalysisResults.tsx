@@ -56,64 +56,72 @@ const AnalysisResults: React.FC<AnalysisResultsProps> = ({
       },
     };
 
+    const commonMargin = { top: 30, right: 30, left: 40, bottom: 80 };
+
     switch (chart.type) {
       case 'bar':
         return (
-          <ChartContainer config={chartConfig} className="h-48 sm:h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={chart.data}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis 
-                  dataKey={chart.xKey} 
-                  fontSize={12}
-                  tick={{ fontSize: 12 }}
-                  interval={0}
-                  angle={-45}
-                  textAnchor="end"
-                  height={60}
-                />
-                <YAxis fontSize={12} />
-                <ChartTooltip content={<ChartTooltipContent />} />
-                <Bar dataKey={chart.yKey} fill="hsl(var(--primary))" />
-              </BarChart>
-            </ResponsiveContainer>
-          </ChartContainer>
+          <div className="w-full h-[350px] sm:h-[400px] p-4 bg-white rounded">
+            <ChartContainer config={chartConfig} className="w-full h-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={chart.data} margin={commonMargin}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis 
+                    dataKey={chart.xKey} 
+                    fontSize={10}
+                    tick={{ fontSize: 10 }}
+                    interval={0}
+                    angle={-45}
+                    textAnchor="end"
+                    height={80}
+                  />
+                  <YAxis fontSize={12} />
+                  <ChartTooltip content={<ChartTooltipContent />} />
+                  <Bar dataKey={chart.yKey} fill="hsl(var(--primary))" />
+                </BarChart>
+              </ResponsiveContainer>
+            </ChartContainer>
+          </div>
         );
       case 'line':
         return (
-          <ChartContainer config={chartConfig} className="h-48 sm:h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={chart.data}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis 
-                  dataKey={chart.xKey} 
-                  fontSize={12}
-                  tick={{ fontSize: 12 }}
-                />
-                <YAxis fontSize={12} />
-                <ChartTooltip content={<ChartTooltipContent />} />
-                <Line type="monotone" dataKey={chart.yKey} stroke="hsl(var(--primary))" strokeWidth={2} />
-              </LineChart>
-            </ResponsiveContainer>
-          </ChartContainer>
+          <div className="w-full h-[350px] sm:h-[400px] p-4 bg-white rounded">
+            <ChartContainer config={chartConfig} className="w-full h-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={chart.data} margin={commonMargin}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis 
+                    dataKey={chart.xKey} 
+                    fontSize={12}
+                    tick={{ fontSize: 12 }}
+                  />
+                  <YAxis fontSize={12} />
+                  <ChartTooltip content={<ChartTooltipContent />} />
+                  <Line type="monotone" dataKey={chart.yKey} stroke="hsl(var(--primary))" strokeWidth={2} />
+                </LineChart>
+              </ResponsiveContainer>
+            </ChartContainer>
+          </div>
         );
       case 'scatter':
         return (
-          <ChartContainer config={chartConfig} className="h-48 sm:h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <ScatterChart data={chart.data}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis 
-                  dataKey={chart.xKey} 
-                  fontSize={12}
-                  tick={{ fontSize: 12 }}
-                />
-                <YAxis dataKey={chart.yKey} fontSize={12} />
-                <ChartTooltip content={<ChartTooltipContent />} />
-                <Scatter dataKey={chart.yKey} fill="hsl(var(--primary))" />
-              </ScatterChart>
-            </ResponsiveContainer>
-          </ChartContainer>
+          <div className="w-full h-[350px] sm:h-[400px] p-4 bg-white rounded">
+            <ChartContainer config={chartConfig} className="w-full h-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <ScatterChart data={chart.data} margin={commonMargin}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis 
+                    dataKey={chart.xKey} 
+                    fontSize={12}
+                    tick={{ fontSize: 12 }}
+                  />
+                  <YAxis dataKey={chart.yKey} fontSize={12} />
+                  <ChartTooltip content={<ChartTooltipContent />} />
+                  <Scatter dataKey={chart.yKey} fill="hsl(var(--primary))" />
+                </ScatterChart>
+              </ResponsiveContainer>
+            </ChartContainer>
+          </div>
         );
       default:
         return null;
@@ -262,13 +270,13 @@ const AnalysisResults: React.FC<AnalysisResultsProps> = ({
   };
 
   return (
-    <div className="analysis-card animate-slide-up">
+    <div className="analysis-card animate-slide-up w-full max-w-none">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-4">
-        <div className="flex items-center gap-3">
-          <TrendingUp className="w-6 h-6 text-success" />
-          <div>
+        <div className="flex items-center gap-3 flex-1 min-w-0">
+          <TrendingUp className="w-6 h-6 text-success flex-shrink-0" />
+          <div className="min-w-0 flex-1">
             <h3 className="text-lg font-semibold">{t('results')}</h3>
-            <p className="text-sm text-muted-foreground break-all sm:break-normal">{fileName}</p>
+            <p className="text-sm text-muted-foreground break-all">{fileName}</p>
           </div>
         </div>
         <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
@@ -310,9 +318,11 @@ const AnalysisResults: React.FC<AnalysisResultsProps> = ({
             <TrendingUp className="w-4 h-4" />
             גרפים דינמיים - לחץ להורדה
           </h4>
-          <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 gap-6">
             {charts.map((chart, index) => (
-              <ChartDisplay key={chart.id || index} chart={chart} />
+              <div key={chart.id || index} className="w-full">
+                <ChartDisplay chart={chart} />
+              </div>
             ))}
           </div>
         </div>
@@ -321,11 +331,11 @@ const AnalysisResults: React.FC<AnalysisResultsProps> = ({
       {/* Statistical Results */}
       <div className="space-y-6">
         {results.filter(result => result.type !== 'chart').map((result, index) => (
-          <div key={index} className="border border-border/50 rounded-lg p-4">
-            <h4 className="font-semibold mb-4 text-base sm:text-lg">{result.title}</h4>
+          <div key={index} className="border border-border/50 rounded-lg p-4 w-full">
+            <h4 className="font-semibold mb-4 text-base sm:text-lg break-words">{result.title}</h4>
             
             {result.chart && (
-              <div className="mb-4">
+              <div className="mb-4 w-full overflow-hidden">
                 {renderChart(result.chart)}
               </div>
             )}
