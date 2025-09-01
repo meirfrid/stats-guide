@@ -325,38 +325,72 @@ export const generateAnalysisResults = (
 };
 
 export const downloadResults = (results: AnalysisResult[], fileName: string) => {
-  // Create CSV content
-  let csvContent = "Analysis Results\n\n";
+  // Create CSV content with proper Hebrew encoding
+  let csvContent = "\uFEFF"; // UTF-8 BOM for proper Hebrew display
+  csvContent += "תוצאות הניתוח הסטטיסטי\n\n";
   
   results.forEach((result, index) => {
     csvContent += `${result.title}\n`;
+    csvContent += "=====================================\n";
+    
     if (result.data) {
       Object.entries(result.data).forEach(([key, value]) => {
-        csvContent += `${key},${value}\n`;
+        csvContent += `"${key}","${value}"\n`;
       });
     }
+    
     if (result.coefficient !== undefined) {
-      csvContent += `Coefficient,${result.coefficient}\n`;
+      csvContent += `"מקדם","${result.coefficient}"\n`;
     }
+    
     if (result.pValue !== undefined) {
-      csvContent += `P-Value,${result.pValue}\n`;
+      csvContent += `"P-Value","${result.pValue}"\n`;
     }
+    
+    if (result.confidence) {
+      csvContent += `"רווח בטחון 95%","[${result.confidence[0]}, ${result.confidence[1]}]"\n`;
+    }
+    
     if (result.summary) {
-      csvContent += `Summary,"${result.summary}"\n`;
+      csvContent += `"סיכום","${result.summary}"\n`;
     }
+    
+    if (result.variables && result.variables.length > 0) {
+      csvContent += `"משתנים","${result.variables.join(', ')}"\n`;
+    }
+    
+    if (result.sampleSize) {
+      csvContent += `"גודל המדגם","${result.sampleSize}"\n`;
+    }
+    
     csvContent += "\n";
   });
 
-  // Download CSV
-  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  // Add footer with analysis info
+  csvContent += "=====================================\n";
+  csvContent += "מידע על הניתוח\n";
+  csvContent += "=====================================\n";
+  csvContent += `"תאריך הניתוח","${new Date().toLocaleDateString('he-IL')}"\n`;
+  csvContent += `"שעת הניתוח","${new Date().toLocaleTimeString('he-IL')}"\n`;
+  csvContent += `"קובץ מקור","${fileName}"\n`;
+  csvContent += `"מספר ניתוחים שבוצעו","${results.length}"\n`;
+
+  // Create and download file with proper UTF-8 encoding
+  const blob = new Blob([csvContent], { 
+    type: 'text/csv;charset=utf-8;' 
+  });
+  
   const link = document.createElement('a');
   const url = URL.createObjectURL(blob);
   link.setAttribute('href', url);
-  link.setAttribute('download', `${fileName.replace(/\.[^/.]+$/, "")}_results.csv`);
+  link.setAttribute('download', `${fileName.replace(/\.[^/.]+$/, "")}_תוצאות_ניתוח.csv`);
   link.style.visibility = 'hidden';
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
+  
+  // Clean up
+  URL.revokeObjectURL(url);
 };
 
 export const downloadCode = (results: AnalysisResult[], fileName: string, instructions: string) => {
