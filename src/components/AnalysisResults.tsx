@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, ScatterChart, Scatter } from 'recharts';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
@@ -318,12 +317,15 @@ const AnalysisResults: React.FC<AnalysisResultsProps> = ({
             <TrendingUp className="w-4 h-4" />
             גרפים דינמיים - לחץ להורדה
           </h4>
-          <div className="grid grid-cols-1 gap-6">
-            {charts.map((chart, index) => (
-              <div key={chart.id || index} className="w-full">
-                <ChartDisplay chart={chart} />
-              </div>
-            ))}
+          <div className="grid grid-cols-1 gap-6 isolate">
+            {charts.map((chart, index) => {
+              if (!chart || !chart.data || !chart.config) return null;
+              return (
+                <div key={chart.id || index} className="w-full">
+                  <ChartDisplay chart={chart} />
+                </div>
+              );
+            })}
           </div>
         </div>
       )}

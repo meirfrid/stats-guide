@@ -25,10 +25,10 @@ const ChartDisplay: React.FC<ChartDisplayProps> = ({ chart, className = '' }) =>
       } else {
         const options: ChartDownloadOptions = {
           format,
-          quality: 0.9,
+          quality: 0.92,
           backgroundColor: '#ffffff',
-          width: 1200,
-          height: 800
+          width: 1280,
+          height: 900
         };
         await downloadChart(chartRef.current, chart.downloadName, options);
       }
@@ -66,7 +66,8 @@ const ChartDisplay: React.FC<ChartDisplayProps> = ({ chart, className = '' }) =>
       'hsl(0, 70%, 50%)',
     ];
 
-    const commonMargin = { top: 30, right: 30, left: 40, bottom: 80 };
+    // Increase bottom margin to avoid clipping x-axis tick labels on download
+    const commonMargin = { top: 30, right: 30, left: 40, bottom: 110 };
 
     switch (chart.config.type) {
       case 'histogram':
@@ -80,7 +81,7 @@ const ChartDisplay: React.FC<ChartDisplayProps> = ({ chart, className = '' }) =>
                     dataKey="bin" 
                     angle={-45}
                     textAnchor="end"
-                    height={80}
+                    height={90}
                     fontSize={10}
                     interval={0}
                   />
@@ -108,7 +109,7 @@ const ChartDisplay: React.FC<ChartDisplayProps> = ({ chart, className = '' }) =>
                     dataKey={chart.config.xAxis} 
                     angle={-45}
                     textAnchor="end"
-                    height={80}
+                    height={90}
                     fontSize={10}
                     interval={0}
                   />
@@ -171,7 +172,7 @@ const ChartDisplay: React.FC<ChartDisplayProps> = ({ chart, className = '' }) =>
   };
 
   return (
-    <div className={`w-full border border-border/50 rounded-lg bg-card shadow-sm ${className}`}>
+    <div className={`w-full border border-border/50 rounded-lg bg-card shadow-sm overflow-hidden ${className}`}>
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 border-b border-border/50 gap-4">
         <h4 className="font-semibold text-base sm:text-lg text-foreground break-words flex-1">{chart.title}</h4>
         <div className="flex flex-wrap gap-2 w-full sm:w-auto">
@@ -204,7 +205,7 @@ const ChartDisplay: React.FC<ChartDisplayProps> = ({ chart, className = '' }) =>
         </div>
       </div>
       
-      <div ref={chartRef} className="w-full bg-white">
+      <div ref={chartRef} data-chart className="w-full bg-white">
         {renderChart()}
       </div>
       

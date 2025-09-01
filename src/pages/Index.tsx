@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { LanguageProvider } from '@/contexts/LanguageContext';
 import LanguageToggle from '@/components/LanguageToggle';
@@ -12,6 +11,7 @@ import { generateAnalysisResults, downloadResults, downloadCode } from '@/utils/
 import { parseFile } from '@/utils/csvParser';
 import { useToast } from '@/hooks/use-toast';
 import { GeneratedChart } from '@/utils/chartGenerator';
+import ErrorBoundary from '@/components/ErrorBoundary';
 
 interface ParsedData {
   data: any[];
@@ -188,45 +188,47 @@ const MainContent: React.FC = () => {
             )}
           </div>
 
-          {/* Right Column - Results */}
-          <div className="space-y-6">
-            {/* Analysis Results */}
-            {analysisResults && parsedData && (
-              <section className="animate-slide-up">
-                <AnalysisResults
-                  results={analysisResults}
-                  charts={generatedCharts}
-                  instructions={analysisInstructions}
-                  fileName={parsedData.fileName}
-                  onDownloadResults={handleDownloadResults}
-                  onDownloadCode={handleDownloadCode}
-                />
-              </section>
-            )}
+          {/* Right Column - Results (isolated with ErrorBoundary so left side never disappears) */}
+          <ErrorBoundary>
+            <div className="space-y-6">
+              {/* Analysis Results */}
+              {analysisResults && parsedData && (
+                <section className="animate-slide-up">
+                  <AnalysisResults
+                    results={analysisResults}
+                    charts={generatedCharts}
+                    instructions={analysisInstructions}
+                    fileName={parsedData.fileName}
+                    onDownloadResults={handleDownloadResults}
+                    onDownloadCode={handleDownloadCode}
+                  />
+                </section>
+              )}
 
-            {/* Analysis Loading State */}
-            {isAnalyzing && (
-              <section className="analysis-card animate-fade-in">
-                <div className="flex items-center gap-3 mb-6">
-                  <BarChart3 className="w-6 h-6 text-success" />
-                  <h3 className="text-lg font-semibold">{t('analyzing')}</h3>
-                </div>
-                
-                <div className="space-y-4">
-                  {[1, 2, 3].map((i) => (
-                    <div key={i} className="h-16 bg-muted/30 rounded-lg animate-pulse shimmer" />
-                  ))}
-                </div>
-                
-                <div className="mt-6 flex items-center justify-center">
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-                    <span>{t('analyzing')}</span>
+              {/* Analysis Loading State */}
+              {isAnalyzing && (
+                <section className="analysis-card animate-fade-in">
+                  <div className="flex items-center gap-3 mb-6">
+                    <BarChart3 className="w-6 h-6 text-success" />
+                    <h3 className="text-lg font-semibold">{t('analyzing')}</h3>
                   </div>
-                </div>
-              </section>
-            )}
-          </div>
+                  
+                  <div className="space-y-4">
+                    {[1, 2, 3].map((i) => (
+                      <div key={i} className="h-16 bg-muted/30 rounded-lg animate-pulse shimmer" />
+                    ))}
+                  </div>
+                  
+                  <div className="mt-6 flex items-center justify-center">
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                      <span>{t('analyzing')}</span>
+                    </div>
+                  </div>
+                </section>
+              )}
+            </div>
+          </ErrorBoundary>
         </div>
       </main>
     </div>
