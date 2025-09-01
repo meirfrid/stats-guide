@@ -57,7 +57,7 @@ const ChartDisplay: React.FC<ChartDisplayProps> = ({ chart, className = '' }) =>
 
     const colors = [
       'hsl(var(--primary))',
-      'hsl(var(--secondary))',
+      'hsl(var(--secondary))', 
       'hsl(var(--accent))',
       'hsl(220, 70%, 50%)',
       'hsl(280, 70%, 50%)',
@@ -66,7 +66,6 @@ const ChartDisplay: React.FC<ChartDisplayProps> = ({ chart, className = '' }) =>
       'hsl(0, 70%, 50%)',
     ];
 
-    // Increase bottom margin to avoid clipping x-axis tick labels on download
     const commonMargin = { top: 30, right: 30, left: 40, bottom: 110 };
 
     switch (chart.config.type) {

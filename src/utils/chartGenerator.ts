@@ -10,7 +10,7 @@ interface ChartConfig {
   yAxis?: string;
   groupBy?: string;
   aggregation?: 'mean' | 'sum' | 'count';
-  bins?: number; // for histogram
+  bins?: number;
 }
 
 export interface GeneratedChart {
@@ -43,7 +43,9 @@ export const generateChartsFromInstructions = (
       // Check for direct mentions, quoted mentions, etc.
       if (textLower.includes(colLower) || textLower.includes(col) ||
           textLower.includes(`"${col}"`) || textLower.includes(`'${col}'`) ||
-          textLower.includes(`"${colLower}"`) || textLower.includes(`'${colLower}'`)) {
+          textLower.includes(`"${colLower}"`) || textLower.includes(`'${colLower}'`) ||
+          textLower.includes(`${col} `) || textLower.includes(` ${col}`) ||
+          textLower.includes(`עמודת ${colLower}`) || textLower.includes(`משתנה ${colLower}`)) {
         mentioned.push(col);
       }
     });
@@ -68,7 +70,7 @@ export const generateChartsFromInstructions = (
   console.log('Numeric columns:', numericColumns);
   console.log('Categorical columns:', categoricalColumns);
 
-  // Parse chart requirements from instructions with precision
+  // Parse chart requirements from instructions with high precision
   const chartRequests = parseChartRequests(instructions, numericColumns, categoricalColumns, mentionedColumns);
   
   console.log('Parsed chart requests:', chartRequests);
@@ -124,34 +126,73 @@ const parseChartRequests = (
   console.log('Mentioned numeric columns:', mentionedNumeric);
   console.log('Mentioned categorical columns:', mentionedCategorical);
 
-  // Histogram requests
-  if (lowerInstructions.includes('היסטוגרמה') || lowerInstructions.includes('histogram')) {
+  // Histogram requests - more comprehensive detection
+  if (lowerInstructions.includes('היסטוגרמה') || 
+      lowerInstructions.includes('histogram') ||
+      lowerInstructions.includes('התפלגות') ||
+      lowerInstructions.includes('תדירות')) {
+    
     if (mentionedNumeric.length > 0) {
-      // Create histogram for each mentioned numeric column
       mentionedNumeric.forEach(col => {
         requests.push({
           type: 'histogram',
-          title: `התפלגות ${col}`,
+          title: `היסטוגרמה - התפלגות ${col}`,
           xAxis: col,
           bins: 20
         });
         console.log(`Added histogram request for column: ${col}`);
       });
     } else if (numericCols.length > 0) {
-      // Fallback to first numeric column
       requests.push({
         type: 'histogram',
-        title: `התפלגות ${numericCols[0]}`,
+        title: `היסטוגרמה - התפלגות ${numericCols[0]}`,
         xAxis: numericCols[0],
         bins: 20
       });
     }
   }
 
-  // Scatter plot requests
-  if (lowerInstructions.includes('פיזור') || lowerInstructions.includes('scatter')) {
+  // Bar chart requests - comprehensive detection
+  if (lowerInstructions.includes('עמודות') || 
+      lowerInstructions.includes('bar') ||
+      lowerInstructions.includes('גרף עמודות') ||
+      lowerInstructions.includes('עמודה') ||
+      lowerInstructions.includes('בר')) {
+    
+    if (mentionedCategorical.length > 0 && mentionedNumeric.length > 0) {
+      // Create bar chart for each combination
+      mentionedCategorical.forEach(catCol => {
+        mentionedNumeric.forEach(numCol => {
+          requests.push({
+            type: 'bar',
+            title: `גרף עמודות: ${numCol} לפי ${catCol}`,
+            xAxis: catCol,
+            yAxis: numCol,
+            aggregation: 'mean'
+          });
+          console.log(`Added bar chart: ${numCol} by ${catCol}`);
+        });
+      });
+    } else if (categoricalCols.length > 0 && numericCols.length > 0) {
+      // Fallback to first available
+      requests.push({
+        type: 'bar',
+        title: `גרף עמודות: ${numericCols[0]} לפי ${categoricalCols[0]}`,
+        xAxis: categoricalCols[0],
+        yAxis: numericCols[0],
+        aggregation: 'mean'
+      });
+    }
+  }
+
+  // Scatter plot requests - comprehensive detection
+  if (lowerInstructions.includes('פיזור') || 
+      lowerInstructions.includes('scatter') ||
+      lowerInstructions.includes('נקודות') ||
+      lowerInstructions.includes('קורלציה') ||
+      lowerInstructions.includes('מתאם')) {
+    
     if (mentionedNumeric.length >= 2) {
-      // Use the first two mentioned numeric columns
       requests.push({
         type: 'scatter',
         title: `גרף פיזור: ${mentionedNumeric[0]} מול ${mentionedNumeric[1]}`,
@@ -160,7 +201,6 @@ const parseChartRequests = (
       });
       console.log(`Added scatter plot: ${mentionedNumeric[0]} vs ${mentionedNumeric[1]}`);
     } else if (numericCols.length >= 2) {
-      // Fallback
       requests.push({
         type: 'scatter',
         title: `גרף פיזור: ${numericCols[0]} מול ${numericCols[1]}`,
@@ -170,36 +210,17 @@ const parseChartRequests = (
     }
   }
 
-  // Bar chart requests
-  if (lowerInstructions.includes('עמודות') || lowerInstructions.includes('bar')) {
-    if (mentionedCategorical.length > 0 && mentionedNumeric.length > 0) {
-      // Use mentioned columns
-      requests.push({
-        type: 'bar',
-        title: `ממוצע ${mentionedNumeric[0]} לפי ${mentionedCategorical[0]}`,
-        xAxis: mentionedCategorical[0],
-        yAxis: mentionedNumeric[0],
-        aggregation: 'mean'
-      });
-      console.log(`Added bar chart: ${mentionedNumeric[0]} by ${mentionedCategorical[0]}`);
-    } else if (categoricalCols.length > 0 && numericCols.length > 0) {
-      // Fallback
-      requests.push({
-        type: 'bar',
-        title: `ממוצע ${numericCols[0]} לפי ${categoricalCols[0]}`,
-        xAxis: categoricalCols[0],
-        yAxis: numericCols[0],
-        aggregation: 'mean'
-      });
-    }
-  }
-
-  // Line chart requests
-  if (lowerInstructions.includes('קו') || lowerInstructions.includes('line')) {
+  // Line chart requests - comprehensive detection
+  if (lowerInstructions.includes('קו') || 
+      lowerInstructions.includes('line') ||
+      lowerInstructions.includes('מגמה') ||
+      lowerInstructions.includes('זמן') ||
+      lowerInstructions.includes('טרנד')) {
+    
     if (mentionedNumeric.length >= 2) {
       requests.push({
         type: 'line',
-        title: `מגמה: ${mentionedNumeric[1]} לאורך ${mentionedNumeric[0]}`,
+        title: `גרף קו: ${mentionedNumeric[1]} לאורך ${mentionedNumeric[0]}`,
         xAxis: mentionedNumeric[0],
         yAxis: mentionedNumeric[1]
       });
@@ -207,34 +228,14 @@ const parseChartRequests = (
     } else if (numericCols.length >= 2) {
       requests.push({
         type: 'line',
-        title: `מגמה: ${numericCols[1]} לאורך ${numericCols[0]}`,
+        title: `גרף קו: ${numericCols[1]} לאורך ${numericCols[0]}`,
         xAxis: numericCols[0],
         yAxis: numericCols[1]
       });
     }
   }
 
-  // Boxplot requests
-  if (lowerInstructions.includes('boxplot') || lowerInstructions.includes('תיבה')) {
-    if (mentionedCategorical.length > 0 && mentionedNumeric.length > 0) {
-      requests.push({
-        type: 'boxplot',
-        title: `Boxplot: ${mentionedNumeric[0]} לפי ${mentionedCategorical[0]}`,
-        xAxis: mentionedCategorical[0],
-        yAxis: mentionedNumeric[0]
-      });
-      console.log(`Added boxplot: ${mentionedNumeric[0]} by ${mentionedCategorical[0]}`);
-    } else if (categoricalCols.length > 0 && numericCols.length > 0) {
-      requests.push({
-        type: 'boxplot',
-        title: `Boxplot: ${numericCols[0]} לפי ${categoricalCols[0]}`,
-        xAxis: categoricalCols[0],
-        yAxis: numericCols[0]
-      });
-    }
-  }
-
-  console.log(`Generated ${requests.length} chart requests`);
+  console.log(`Generated ${requests.length} chart requests from instructions`);
   return requests;
 };
 
@@ -293,7 +294,7 @@ const generateDefaultCharts = (
       .filter(row => 
         !isNaN(row[numericCols[0]]) && !isNaN(row[numericCols[1]])
       )
-      .slice(0, 500); // Limit for performance
+      .slice(0, 500);
 
     defaultCharts.push({
       id: 'default_scatter',
@@ -403,5 +404,5 @@ const aggregateDataByCategory = (
       [valueCol]: Number(aggregatedValue.toFixed(3)),
       count: values.length
     };
-  }).slice(0, 20); // Limit categories for readability
+  }).slice(0, 20);
 };
