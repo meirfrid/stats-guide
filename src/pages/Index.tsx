@@ -12,6 +12,7 @@ import { parseFile } from '@/utils/csvParser';
 import { useToast } from '@/hooks/use-toast';
 import { GeneratedChart } from '@/utils/chartGenerator';
 import ErrorBoundary from '@/components/ErrorBoundary';
+import SignInForm from '@/components/SignInForm';
 
 interface ParsedData {
   data: any[];
@@ -157,6 +158,9 @@ const MainContent: React.FC = () => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Left Column - Upload & Instructions */}
           <div className="space-y-6 animate-fade-in">
+            <section className="animate-slide-up">
+              <SignInForm />
+            </section>
             {/* File Upload */}
             <section>
               <div className="flex items-center gap-2 mb-4">
