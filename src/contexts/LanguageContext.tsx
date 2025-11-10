@@ -41,7 +41,22 @@ const translations = {
     rows: 'שורות',
     columns: 'עמודות',
     missingValues: 'ערכים חסרים',
-    language: 'שפה'
+    language: 'שפה',
+    signInTitle: 'התחברות',
+    signInSubtitle: 'היכנס לחשבון שלך כדי לגשת לניתוחים השמורים',
+    email: 'דואר אלקטרוני',
+    password: 'סיסמה',
+    rememberMe: 'זכור אותי',
+    forgotPassword: 'שכחת סיסמה?',
+    signIn: 'התחבר',
+    signingIn: 'מתחבר...',
+    signInSuccess: 'התחברת בהצלחה',
+    signInWelcomeBack: 'ברוך שובך! אתה מוכן להתחיל בניתוחים.',
+    signInRemembered: 'אנחנו נזכור אותך בפעם הבאה.',
+    emailRequired: 'יש להזין כתובת דוא"ל',
+    invalidEmail: 'כתובת דוא"ל לא תקינה',
+    passwordRequired: 'יש להזין סיסמה',
+    passwordPlaceholder: 'הקלד סיסמה מאובטחת'
   },
   en: {
     appTitle: 'Data Analyzer',
@@ -73,7 +88,22 @@ const translations = {
     rows: 'Rows',
     columns: 'Columns',
     missingValues: 'Missing Values',
-    language: 'Language'
+    language: 'Language',
+    signInTitle: 'Sign in',
+    signInSubtitle: 'Access saved analyses with your account credentials',
+    email: 'Email address',
+    password: 'Password',
+    rememberMe: 'Remember me',
+    forgotPassword: 'Forgot password?',
+    signIn: 'Sign in',
+    signingIn: 'Signing in...',
+    signInSuccess: 'Signed in successfully',
+    signInWelcomeBack: 'Welcome back! You are ready to start analyzing.',
+    signInRemembered: 'We will remember you next time.',
+    emailRequired: 'Email address is required',
+    invalidEmail: 'Please enter a valid email address',
+    passwordRequired: 'Password is required',
+    passwordPlaceholder: 'Enter a secure password'
   }
 };
 
